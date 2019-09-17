@@ -3,7 +3,7 @@ const {transports, createLogger, format} = require('winston');
 const auth = require('./auth.json');
 const ids = require('./ids.json');
 const schedule = require('node-schedule');
-
+const ffmpeg = require("ffmpeg")
 // Configure logger settings, note the logger timestamps are in utc + 0
 const logger = createLogger({
         format: format.combine(
@@ -15,6 +15,8 @@ const logger = createLogger({
 		]
     });
 logger.level = 'debug';
+
+var scheduled = false;
 
 // Initialize Discord client
 const client = new Discord.Client();
@@ -33,18 +35,26 @@ client.on('ready', () => {
 	// schedule the ping
 	var a = schedule.scheduleJob(rule, () => {
 		
+		
 		//pick a random time between noon and 6 pm
 		var randHour = Math.floor(Math.random() * (18 - 12) + 12);
 		var randMin = Math.floor(Math.random() * 59);
 		
-		logger.info('The message today will be at ' + randHour + ':' + ((randMin < 10) ? '0' + randMin : randMin));
-		
 		// schedule ping
-		var dailyjob = schedule.scheduleJob({hour: randHour, minute: randMin}, () => {
-			client.guilds.get(ids.guildid).channels.get(ids.channelid).send('owo *notices <@' + ids.userid + '>*')
-				.then(logger.info('Sent ping to poser'))
-				.catch(console.error);
-		});
+		if (!scheduled) {
+			var dailyjob = schedule.reschedule({hour: randHour, minute: randMin}, () => {
+				client.guilds.get(ids.guildid).channels.get(ids.channelid).send('owo *notices <@' + ids.userid + '>*')
+					.then(logger.info('Sent ping to poser'))
+					.catch(console.error);
+			});
+			logger.info('The message today will be at ');
+			logger.info(dailyjob.nextInvocation());
+			scheduled = true;
+		} else {
+			dailyjob.reschedule({hour: randHour, minute: randMin});
+			logger.info('The message today will be at ');
+			logger.info(dailyjob.nextInvocation());
+		}
 	});
 });
 
@@ -57,7 +67,7 @@ client.on('message', message => {
         args = args.splice(1);
         switch(cmd) {
 			case '🏓':
-            case 'ping':
+			case 'ping':
 				logger.info(message.author.username + ' pinged');
 				message.channel.send('Pong!');
 				break;
@@ -69,9 +79,15 @@ client.on('message', message => {
 				logger.info(message.author.username + ' did a command test');
 				var currentchannel = client.guilds.get(ids.guildid).channels.get(ids.testchannelid);
 				currentchannel.send('This channel is '  + currentchannel.name);
+				break;
+			case 'connect':
+				client.guilds.get(ids.guildid).channels.get(ids.voicechannelid).join();
+				break;
+			case 'leave':
+				client.guilds.get(ids.guildid).channels.get(ids.voicechannelid).leave();
             // Just add any case commands if you want to..
-         }
-     }
+		}
+	}
 });
 
 
