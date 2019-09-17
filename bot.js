@@ -4,6 +4,8 @@ const auth = require('./auth.json');
 const ids = require('./ids.json');
 const schedule = require('node-schedule');
 const ffmpeg = require("ffmpeg")
+const insults = require('./insults.js');
+
 // Configure logger settings, note the logger timestamps are in utc + 0
 const logger = createLogger({
         format: format.combine(
@@ -34,15 +36,14 @@ client.on('ready', () => {
 
 	// schedule the ping
 	var a = schedule.scheduleJob(rule, () => {
-		
-		
+
 		//pick a random time between noon and 6 pm
 		var randHour = Math.floor(Math.random() * (18 - 12) + 12);
 		var randMin = Math.floor(Math.random() * 59);
 		
 		// schedule ping
 		if (!scheduled) {
-			var dailyjob = schedule.reschedule({hour: randHour, minute: randMin}, () => {
+			var dailyjob = schedule.scheduleJob({hour: randHour, minute: randMin}, () => {
 				client.guilds.get(ids.guildid).channels.get(ids.channelid).send('owo *notices <@' + ids.userid + '>*')
 					.then(logger.info('Sent ping to poser'))
 					.catch(console.error);
@@ -51,6 +52,7 @@ client.on('ready', () => {
 			logger.info(dailyjob.nextInvocation());
 			scheduled = true;
 		} else {
+			
 			dailyjob.reschedule({hour: randHour, minute: randMin});
 			logger.info('The message today will be at ');
 			logger.info(dailyjob.nextInvocation());
@@ -85,8 +87,11 @@ client.on('message', message => {
 				break;
 			case 'leave':
 				client.guilds.get(ids.guildid).channels.get(ids.voicechannelid).leave();
+				break;
             // Just add any case commands if you want to..
 		}
+	} else if (message.content.includes('<@621857544779988992>')) {
+		message.channel.send(insults[Math.floor(Math.random()*insults.length)]);
 	}
 });
 
