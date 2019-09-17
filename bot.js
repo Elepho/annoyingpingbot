@@ -3,7 +3,7 @@ const {transports, createLogger, format} = require('winston');
 const auth = require('./auth.json');
 const ids = require('./ids.json');
 const schedule = require('node-schedule');
-const ffmpeg = require("ffmpeg")
+const ffmpeg = require('ffmpeg');
 const insults = require('./insults.js');
 
 // Configure logger settings, note the logger timestamps are in utc + 0
