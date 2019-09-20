@@ -18,8 +18,6 @@ const logger = createLogger({
     });
 logger.level = 'debug';
 
-var scheduled = false;
-
 // Initialize Discord client
 const client = new Discord.Client();
 client.login(auth.token);
@@ -40,9 +38,9 @@ client.on('ready', () => {
 		//pick a random time between noon and 6 pm
 		var randHour = Math.floor(Math.random() * (18 - 12) + 12);
 		var randMin = Math.floor(Math.random() * 59);
-		
+
 		// schedule ping
-		if (!scheduled) {
+		if (typeof dailyjob == "undefined") {
 			var dailyjob = schedule.scheduleJob({hour: randHour, minute: randMin}, () => {
 				client.guilds.get(ids.guildid).channels.get(ids.channelid).send('owo *notices <@' + ids.userid + '>*')
 					.then(logger.info('Sent ping to poser'))
@@ -50,7 +48,7 @@ client.on('ready', () => {
 			});
 			logger.info('The message today will be at ');
 			logger.info(dailyjob.nextInvocation());
-			scheduled = true;
+			
 		} else {
 			
 			dailyjob.reschedule({hour: randHour, minute: randMin});
