@@ -73,7 +73,7 @@ client.on('message', message => {
 				break;
 			case 'annoy':
 				logger.info(message.author.username + ' played themself');
-				message.channel.send('<@' + message.author.id + '> is a ninny');
+				message.channel.send(message.author.toString() + ' is a ninny');
 				break;
 			case 'test':
 				logger.info(message.author.username + ' did a command test');
@@ -81,10 +81,29 @@ client.on('message', message => {
 				currentchannel.send('This channel is '  + currentchannel.name);
 				break;
 			case 'connect':
-				client.guilds.get(ids.guildid).channels.get(ids.voicechannelid).join();
+				var channelID = 0;
+				message.guild.channels.forEach((val, key, map) => {
+					if (val.type == "voice") {
+						val.members.forEach((val2, key2, map2) => {
+							logger.info(val2.user.username);
+							if (val2.id == message.author.id) {
+								logger.info("Channel found!");
+								logger.info(key);
+								channelID = key;
+							}
+						});
+					}
+				});
+				if (channelID == 0) {
+					client.guilds.get(ids.guildid).channels.get(ids.voicechannelid).join();
+				} else {
+					message.guild.channels.get(channelID).join();
+				}
+				logger.info(message.author.username + ' made the bot join ' + client.voiceConnections.first().channel.name);
 				break;
 			case 'leave':
-				client.guilds.get(ids.guildid).channels.get(ids.voicechannelid).leave();
+				logger.info(message.author.username + ' made the bot leave ' + client.voiceConnections.first().channel.name);
+				client.voiceConnections.first().disconnect();
 				break;
             // Just add any case commands if you want to..
 		}
