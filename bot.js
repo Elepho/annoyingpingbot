@@ -18,6 +18,28 @@ const logger = createLogger({
     });
 logger.level = 'debug';
 
+function schedulePing() {
+	var randHour = Math.floor(Math.random() * (18 - 12) + 12);
+	var randMin = Math.floor(Math.random() * 59);
+
+	// schedule ping
+	if (typeof dailyjob == "undefined") {
+		var dailyjob = schedule.scheduleJob({hour: randHour, minute: randMin}, () => {
+			client.guilds.get(ids.guildid).channels.get(ids.channelid).send('owo *notices <@' + ids.userid + '>*')
+				.then(logger.info('Sent ping to poser'))
+				.catch(console.error);
+		});
+		logger.info('The message today will be at ');
+		logger.info(dailyjob.nextInvocation());
+
+	} else {
+
+		dailyjob.reschedule({hour: randHour, minute: randMin});
+		logger.info('The message today will be at ');
+		logger.info(dailyjob.nextInvocation());
+	}
+}
+
 // Initialize Discord client
 const client = new Discord.Client();
 client.login(auth.token);
@@ -27,35 +49,15 @@ client.on('ready', () => {
     logger.info(client.user.username + ' - (' + client.user.id + ')');
     client.user.setPresence({ game: { name: 'owo *notices poser*', type: 0 } });
 
-	// define rule of when to schedule daily ping (currently 1 am)
-	var rule = new schedule.RecurrenceRule();
-	rule.minute = 0;
-	rule.hour = 1;
+	// if bot is started between 1 am and noon, schedule a ping
+	var date = new Date();
+	
+	if (date.getHours() > 0 && date.getHours() < 12) {
+		schedulePing();
+	}
 
 	// schedule the ping
-	var a = schedule.scheduleJob(rule, () => {
-
-		//pick a random time between noon and 6 pm
-		var randHour = Math.floor(Math.random() * (18 - 12) + 12);
-		var randMin = Math.floor(Math.random() * 59);
-
-		// schedule ping
-		if (typeof dailyjob == "undefined") {
-			var dailyjob = schedule.scheduleJob({hour: randHour, minute: randMin}, () => {
-				client.guilds.get(ids.guildid).channels.get(ids.channelid).send('owo *notices <@' + ids.userid + '>*')
-					.then(logger.info('Sent ping to poser'))
-					.catch(console.error);
-			});
-			logger.info('The message today will be at ');
-			logger.info(dailyjob.nextInvocation());
-			
-		} else {
-			
-			dailyjob.reschedule({hour: randHour, minute: randMin});
-			logger.info('The message today will be at ');
-			logger.info(dailyjob.nextInvocation());
-		}
-	});
+	var a = schedule.scheduleJob('0 1 * * *', () => {schedulePing()});
 });
 
 client.on('message', message => {
