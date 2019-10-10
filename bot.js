@@ -5,7 +5,7 @@ const ids = require('./ids.json');
 const schedule = require('node-schedule');
 const ffmpeg = require('ffmpeg');
 const insults = require('./insults.js');
-const snekfetch = require('snekfetch');
+const fetch = require('node-fetch');
 
 // Configure logger settings, note the logger timestamps are in utc + 0
 const logger = createLogger({
@@ -28,6 +28,8 @@ client.on('ready', () => {
     logger.info(client.user.username + ' - (' + client.user.id + ')');
     client.user.setPresence({ game: { name: 'god', type: 0 } });
 
+	
+
 	// if bot is started between 1 am and noon, schedule a ping
 	var date = new Date();
 	if (date.getHours() > 0 && date.getHours() < 12) {
@@ -38,7 +40,7 @@ client.on('ready', () => {
 	var a = schedule.scheduleJob('0 1 * * *', () => {schedulePing()});
 });
 
-client.on('message', message => {
+client.on('message', async message => {
     // check for command character and remove it
     if (message.content.substring(0, 1) == '!') {
         var args = message.content.substring(1).split(' ');
@@ -70,23 +72,41 @@ client.on('message', message => {
 				client.voiceConnections.first().disconnect();
 				break;
 			case 'curse':
-				curseFetch(message);
-				logger.info(message.author.username + ' cursed themself');
+				var url = await subImageFetch(message, 'cursedimages')
+					.then(url => {
+						if (url.length > 0) { 
+							logger.info(message.author.username + ' cursed themself');
+							message.channel.send({
+								files:
+								[url]
+							})
+						} else {
+							message.channel.send('no posts found, fuck off')
+						}
+					});
 				break;
 			case 'subfetch':
-				var url = subImageFetch(message, args[0])
-					.then(post => {
-						if (post.length > 0) { 
+				var url = await subImageFetch(message, args[0])
+					.then(url => {
+						if (url.length > 0) { 
 							logger.info(message.author.username + ' fetched an image from /r/' + args[0]);
 							message.channel.send({
 								files:
-								[post]
+								[url]
 							})
 						} else {
 							logger.info(message.author.username + ' failed to fetch an image from /r/' + args[0]);
 							message.channel.send('no posts found, fuck off')
 						}
 					});
+				break;
+			case 'scheduledjobs':
+				var count = 0;
+				for (x in schedule.scheduledJobs) {
+					count++;
+				}
+				message.channel.send(count);
+				
 				break;
             // Just add any case commands if you want to..
 		}
@@ -98,16 +118,13 @@ client.on('message', message => {
 function schedulePing() {
 	var randHour = Math.floor(Math.random() * (18 - 12) + 12);
 	var randMin = Math.floor(Math.random() * 59);
+	var role = client.guilds.get('109074432814743552').roles.get('631202481493377034');
 
 	// schedule ping
 	if (typeof dailyjob == "undefined") {
+		
 		var dailyjob = schedule.scheduleJob({hour: randHour, minute: randMin}, () => {
-			client.guilds.get(ids.guildid).channels.get(ids.channelid).send("<@" + ids.userid + ">", {
-				files: [{
-					attachment: 'unnamed.jpg',
-					name: 'unnamed.jpg'
-				}]
-			})
+			client.guilds.get(ids.guildid).channels.get(ids.channelid).send('<@' + ids.userid + '> aaaaaaaaaaaa')
 				.then(logger.info('Sent ping to poser'))
 				.catch(console.error);
 		});
@@ -124,34 +141,16 @@ function schedulePing() {
 
 async function subImageFetch(message, sub) {
 	try {
-        const { body } = await snekfetch
-            .get('https://api.reddit.com/r/' + sub + '.json?sort=top&t=week&limit=100')
-            .query({ limit: 800 });
-        var posts = message.channel.nsfw ? body.data.children : body.data.children.filter(post => !post.data.over_18);
+        const json = await fetch('https://api.reddit.com/r/' + sub + '.json?sort=top&t=week&limit=100')
+				.then(res => res.json());
+		//const json = await response.json();
+		var posts = message.channel.nsfw ? json.data.children : json.data.children.filter(post => !post.data.over_18)
 		posts = posts.filter(post => !post.data.selftext.length);
 		posts = posts.filter(post => (post.data.url.endsWith('.jpg') || post.data.url.endsWith('.png') || post.data.url.endsWith('.gif')));
-        if (!posts.length) return '';
-        const randomnumber = Math.floor(Math.random() * posts.length);
-        return posts[randomnumber].data.url;
+		if (!posts.length) return '';
+		const randomnumber = Math.floor(Math.random() * posts.length);
+		return posts[randomnumber].data.url;
     } catch (err) {
 		return '';
-    }
-}
-
-async function curseFetch(message) {
-	try {
-        const { body } = await snekfetch
-            .get('https://api.reddit.com/r/cursedimages.json?sort=top&t=week&limit=100')
-            .query({ limit: 800 });
-        var posts = message.channel.nsfw ? body.data.children : body.data.children.filter(post => !post.data.over_18);
-		posts.filter(post => !post.data.selftext.length);
-        if (!posts.length) return message.channel.send('It seems we are out of cursed images, Try again later.');
-        const randomnumber = Math.floor(Math.random() * posts.length);
-        message.channel.send({
-			files:
-			[posts[randomnumber].data.url]
-		});
-    } catch (err) {
-        return console.log(err);
     }
 }
