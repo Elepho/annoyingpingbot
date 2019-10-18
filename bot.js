@@ -113,8 +113,8 @@ client.on('message', async message => {
 			case 'urbandictionary':
 				word = args[0];
 				entryNum = 0;
-				if (args.length > 1) {
-					entryNum = args[1] + 1;
+				if (args.length == 2) {
+					entryNum = args[1] - 1;
 				};
 				ud.term(args[0])
 					.then(result => {
