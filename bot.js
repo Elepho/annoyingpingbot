@@ -54,6 +54,13 @@ client.on('message', async message => {
 				logger.info(message.author.username + ' pinged');
 				message.channel.send('Beep beep, ' + message.author.username);
 				break;
+			case 'oof':
+				const eheeah = client.emojis.get("598930147470606356");
+				const f_emoji = client.emojis.find(emoji => emoji.name === "regional_indicator_f");
+				message.channel.send(eheeah + eheeah + '🇫')
+					.then(logger.info(message.author.username + ' oofed'));
+				break;
+			/*
 			case 'test':
 				logger.info(message.author.username + ' did a command test');
 				var temp = message.channel.send('This channel is '  + message.channel.name)
