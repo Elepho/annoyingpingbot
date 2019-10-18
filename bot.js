@@ -6,6 +6,7 @@ const schedule = require('node-schedule');
 const ffmpeg = require('ffmpeg');
 const insults = require('./insults.js');
 const fetch = require('node-fetch');
+const ud = require('urban-dictionary');
 
 // Configure logger settings, note the logger timestamps are in utc + 0
 const logger = createLogger({
@@ -85,6 +86,7 @@ client.on('message', async message => {
 						}
 					});
 				break;
+			case 'sf':
 			case 'subfetch':
 				var url = await subImageFetch(message, args[0])
 					.then(url => {
@@ -99,6 +101,28 @@ client.on('message', async message => {
 							message.channel.send('no posts found, fuck off')
 						}
 					});
+				break;
+			case 'ud':
+			case 'urbandictionary':
+				word = args[0];
+				entryNum = 0;
+				if (args.length > 1) {
+					entryNum = args[1] + 1;
+				};
+				ud.term(args[0])
+					.then(result => {
+						const entry = result.entries[entryNum];
+						var embed = new Discord.RichEmbed()
+							.setColor('#ff4000')
+							.setTitle(entry.word)
+							.setDescription(entry.definition.replace(/[\[\]]/g, ''))
+							.setFooter(entry.example.replace(/[\[\]]/g, ''));
+						message.channel.send(embed)
+							.then(logger.info(message.author.username + ' search for the definition of the word ' + entry.word))
+							.catch(error => {logger.info(error)});
+					
+						})
+					.catch(error => {logger.info(error)});
 				break;
 			case 'scheduledjobs':
 				var count = 0;
